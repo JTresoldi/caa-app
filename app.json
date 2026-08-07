@@ -3,7 +3,6 @@
     "name": "caa-app",
     "slug": "caa-app",
     "version": "1.0.0",
-    "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "caaapp",
     "userInterfaceStyle": "automatic",

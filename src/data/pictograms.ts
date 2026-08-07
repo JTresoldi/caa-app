@@ -1,0 +1,240 @@
+export const PICTOGRAM_CATEGORIES = [
+  'Essenciais',
+  'Ações',
+  'Alimentos e bebidas',
+  'Mensagens rápidas',
+] as const;
+
+export type PictogramCategory = (typeof PICTOGRAM_CATEGORIES)[number];
+
+export type PictogramBehavior = 'sentence' | 'immediate';
+
+export type PictogramImage = {
+  uri: string;
+  alt: string;
+};
+
+export type Pictogram = {
+  id: string;
+  label: string;
+  spokenText: string;
+  order: number;
+  behavior: PictogramBehavior;
+  emoji: string;
+  image?: PictogramImage;
+  backgroundColor: string;
+  category: PictogramCategory;
+};
+
+export const PICTOGRAMS: Pictogram[] = [
+  {
+    id: 'eu',
+    label: 'Eu',
+    spokenText: 'Eu',
+    order: 1,
+    behavior: 'sentence',
+    emoji: '🙋',
+    backgroundColor: '#FFF0BE',
+    category: 'Essenciais',
+  },
+  {
+    id: 'quero',
+    label: 'Quero',
+    spokenText: 'Quero',
+    order: 2,
+    behavior: 'sentence',
+    emoji: '🫶',
+    backgroundColor: '#DDF3D6',
+    category: 'Essenciais',
+  },
+  {
+    id: 'banheiro',
+    label: 'Banheiro',
+    spokenText: 'Banheiro',
+    order: 3,
+    behavior: 'sentence',
+    emoji: '🚻',
+    backgroundColor: '#F7D7E7',
+    category: 'Essenciais',
+  },
+  {
+    id: 'comer',
+    label: 'Comer',
+    spokenText: 'Comer',
+    order: 1,
+    behavior: 'sentence',
+    emoji: '🍽️',
+    backgroundColor: '#E7D9F5',
+    category: 'Ações',
+  },
+  {
+    id: 'beber',
+    label: 'Beber',
+    spokenText: 'Beber',
+    order: 2,
+    behavior: 'sentence',
+    emoji: '🥤',
+    backgroundColor: '#D8F3FF',
+    category: 'Ações',
+  },
+  {
+    id: 'ir',
+    label: 'Ir',
+    spokenText: 'Ir',
+    order: 3,
+    behavior: 'sentence',
+    emoji: '🚶',
+    backgroundColor: '#DCEBFF',
+    category: 'Ações',
+  },
+  {
+    id: 'brincar',
+    label: 'Brincar',
+    spokenText: 'Brincar',
+    order: 4,
+    behavior: 'sentence',
+    emoji: '🧸',
+    backgroundColor: '#FFF0C7',
+    category: 'Ações',
+  },
+  {
+    id: 'dormir',
+    label: 'Dormir',
+    spokenText: 'Dormir',
+    order: 5,
+    behavior: 'sentence',
+    emoji: '😴',
+    backgroundColor: '#FFE0B8',
+    category: 'Ações',
+  },
+  {
+    id: 'falar',
+    label: 'Falar',
+    spokenText: 'Falar',
+    order: 6,
+    behavior: 'sentence',
+    emoji: '🗣️',
+    backgroundColor: '#DDF5E3',
+    category: 'Ações',
+  },
+  {
+    id: 'agua',
+    label: 'Água',
+    spokenText: 'Água',
+    order: 1,
+    behavior: 'sentence',
+    emoji: '💧',
+    backgroundColor: '#CFEAFF',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'arroz',
+    label: 'Arroz',
+    spokenText: 'Arroz',
+    order: 2,
+    behavior: 'sentence',
+    emoji: '🍚',
+    backgroundColor: '#F1E9D8',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'pao',
+    label: 'Pão',
+    spokenText: 'Pão',
+    order: 3,
+    behavior: 'sentence',
+    emoji: '🍞',
+    backgroundColor: '#FFE2B8',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'maca',
+    label: 'Maçã',
+    spokenText: 'Maçã',
+    order: 4,
+    behavior: 'sentence',
+    emoji: '🍎',
+    backgroundColor: '#FFD9D4',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'leite',
+    label: 'Leite',
+    spokenText: 'Leite',
+    order: 5,
+    behavior: 'sentence',
+    emoji: '🥛',
+    backgroundColor: '#E8F3FA',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'suco',
+    label: 'Suco',
+    spokenText: 'Suco',
+    order: 6,
+    behavior: 'sentence',
+    emoji: '🧃',
+    backgroundColor: '#FFE7C8',
+    category: 'Alimentos e bebidas',
+  },
+  {
+    id: 'sim',
+    label: 'Sim',
+    spokenText: 'Sim',
+    order: 1,
+    behavior: 'immediate',
+    emoji: '👍',
+    backgroundColor: '#D5F2EC',
+    category: 'Mensagens rápidas',
+  },
+  {
+    id: 'nao',
+    label: 'Não',
+    spokenText: 'Não',
+    order: 2,
+    behavior: 'immediate',
+    emoji: '👎',
+    backgroundColor: '#FFD7D4',
+    category: 'Mensagens rápidas',
+  },
+  {
+    id: 'ajuda',
+    label: 'Preciso de ajuda',
+    spokenText: 'Preciso de ajuda',
+    order: 3,
+    behavior: 'immediate',
+    emoji: '🆘',
+    backgroundColor: '#FFDCDC',
+    category: 'Mensagens rápidas',
+  },
+  {
+    id: 'pare',
+    label: 'Pare',
+    spokenText: 'Pare',
+    order: 4,
+    behavior: 'immediate',
+    emoji: '✋',
+    backgroundColor: '#FFE1C7',
+    category: 'Mensagens rápidas',
+  },
+  {
+    id: 'estou-com-dor',
+    label: 'Estou com dor',
+    spokenText: 'Estou com dor',
+    order: 5,
+    behavior: 'immediate',
+    emoji: '🤕',
+    backgroundColor: '#F4D8E6',
+    category: 'Mensagens rápidas',
+  },
+  {
+    id: 'quero-ir-embora',
+    label: 'Quero ir embora',
+    spokenText: 'Quero ir embora',
+    order: 6,
+    behavior: 'immediate',
+    emoji: '🚪',
+    backgroundColor: '#DCEBFF',
+    category: 'Mensagens rápidas',
+  },
+];
