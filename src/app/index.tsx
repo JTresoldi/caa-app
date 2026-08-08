@@ -1,8 +1,11 @@
 import * as Speech from 'expo-speech';
-import { useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import {
   FlatList,
+  LayoutChangeEvent,
   ListRenderItem,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,26 +17,110 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PictogramButton } from '@/components/PictogramButton';
 import { SentenceBar } from '@/components/SentenceBar';
 import {
-  PICTOGRAM_CATEGORIES,
+  PICTOGRAM_SECTIONS,
   PICTOGRAMS,
   Pictogram,
-  PictogramCategory,
+  PictogramSection,
+  PictogramSectionId,
 } from '@/data/pictograms';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
+type SectionItemLayout = {
+  x: number;
+  width: number;
+};
+
+const SECTION_SCROLL_EDGE_PADDING = 8;
+const MORE_SECTIONS_INDICATOR_WIDTH = 30;
+
 export default function HomeScreen(): React.JSX.Element {
   const [sentence, setSentence] = useState<Pictogram[]>([]);
-  const [activeCategory, setActiveCategory] =
-    useState<PictogramCategory>('Essenciais');
+  const [activeSection, setActiveSection] =
+    useState<PictogramSectionId>('favorites');
+  const [sectionViewportWidth, setSectionViewportWidth] = useState<number>(0);
+  const [sectionContentWidth, setSectionContentWidth] = useState<number>(0);
+  const [sectionScrollX, setSectionScrollX] = useState<number>(0);
+  const sectionScrollRef = useRef<ScrollView | null>(null);
+  const sectionItemLayouts = useRef<
+    Partial<Record<PictogramSectionId, SectionItemLayout>>
+  >({});
   const layout = useResponsiveLayout();
   const filteredPictograms: Pictogram[] = PICTOGRAMS
     .filter(
-      (pictogram: Pictogram): boolean => pictogram.category === activeCategory,
+      (pictogram: Pictogram): boolean =>
+        activeSection === 'favorites'
+          ? pictogram.isFavorite
+          : pictogram.category === activeSection,
     )
     .sort(
       (first: Pictogram, second: Pictogram): number =>
         first.order - second.order,
     );
+  const hasSectionOverflow: boolean =
+    sectionContentWidth > sectionViewportWidth + 1;
+  const hasMoreSectionsToRight: boolean =
+    hasSectionOverflow &&
+    sectionScrollX + sectionViewportWidth < sectionContentWidth - 8;
+
+  const handleSectionLayout = (event: LayoutChangeEvent): void => {
+    setSectionViewportWidth(event.nativeEvent.layout.width);
+  };
+
+  const handleSectionScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ): void => {
+    setSectionScrollX(event.nativeEvent.contentOffset.x);
+  };
+
+  const selectSection = (sectionId: PictogramSectionId): void => {
+    setActiveSection(sectionId);
+
+    if (!hasSectionOverflow) {
+      return;
+    }
+
+    const itemLayout: SectionItemLayout | undefined =
+      sectionItemLayouts.current[sectionId];
+
+    if (!itemLayout) {
+      return;
+    }
+
+    const visibleLeft: number = sectionScrollX + SECTION_SCROLL_EDGE_PADDING;
+    const visibleRight: number =
+      sectionScrollX +
+      sectionViewportWidth -
+      MORE_SECTIONS_INDICATOR_WIDTH -
+      SECTION_SCROLL_EDGE_PADDING;
+    let targetX: number = sectionScrollX;
+
+    if (itemLayout.x < visibleLeft) {
+      targetX = itemLayout.x - SECTION_SCROLL_EDGE_PADDING;
+    } else if (itemLayout.x + itemLayout.width > visibleRight) {
+      targetX =
+        itemLayout.x +
+        itemLayout.width -
+        sectionViewportWidth +
+        MORE_SECTIONS_INDICATOR_WIDTH +
+        SECTION_SCROLL_EDGE_PADDING;
+    }
+
+    const maximumScrollX: number = Math.max(
+      0,
+      sectionContentWidth - sectionViewportWidth,
+    );
+    const clampedTargetX: number = Math.min(
+      Math.max(0, targetX),
+      maximumScrollX,
+    );
+
+    if (Math.abs(clampedTargetX - sectionScrollX) > 1) {
+      sectionScrollRef.current?.scrollTo({
+        x: clampedTargetX,
+        animated: true,
+      });
+    }
+  };
 
   const speakText = (text: string, onDispatched?: () => void): void => {
     void Speech.stop().then((): void => {
@@ -138,51 +225,89 @@ export default function HomeScreen(): React.JSX.Element {
           Escolha um pictograma
         </Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
+        <View
           style={[
-            styles.categoryScroll,
-            layout.isCompactLandscape && styles.compactCategoryScroll,
+            styles.sectionBar,
+            layout.isCompactLandscape && styles.compactSectionBar,
           ]}
-          contentContainerStyle={[
-            styles.categories,
-            layout.isTablet && styles.largeCategories,
-            layout.isCompactLandscape && styles.compactCategories,
-          ]}
+          onLayout={handleSectionLayout}
         >
-          {PICTOGRAM_CATEGORIES.map((category: PictogramCategory) => {
-            const isActive: boolean = category === activeCategory;
+          <ScrollView
+            ref={sectionScrollRef}
+            horizontal
+            scrollEnabled={hasSectionOverflow}
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+            contentContainerStyle={[
+              styles.categories,
+              layout.isTablet && styles.largeCategories,
+              layout.isCompactLandscape && styles.compactCategories,
+            ]}
+            onContentSizeChange={(width: number): void =>
+              setSectionContentWidth(width)
+            }
+            onScroll={handleSectionScroll}
+            scrollEventThrottle={16}
+          >
+            {PICTOGRAM_SECTIONS.map((section: PictogramSection) => {
+              const isActive: boolean = section.id === activeSection;
 
-            return (
-              <Pressable
-                key={category}
-                accessibilityRole="button"
-                accessibilityLabel={`Categoria ${category}`}
-                accessibilityState={{ selected: isActive }}
-                onPress={(): void => setActiveCategory(category)}
-                style={({ pressed }) => [
-                  styles.categoryButton,
-                  layout.isTablet && styles.largeCategoryButton,
-                  layout.isCompactLandscape && styles.compactCategoryButton,
-                  isActive && styles.activeCategoryButton,
-                  pressed && styles.pressedCategoryButton,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.categoryLabel,
-                    layout.isTablet && styles.largeCategoryLabel,
-                    layout.isCompactLandscape && styles.compactCategoryLabel,
-                    isActive && styles.activeCategoryLabel,
-                  ]}
-                >
-                  {category}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+              return (
+                <Fragment key={section.id}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Seção ${section.label}`}
+                    accessibilityState={{ selected: isActive }}
+                    onLayout={(event: LayoutChangeEvent): void => {
+                      sectionItemLayouts.current[section.id] = {
+                        x: event.nativeEvent.layout.x,
+                        width: event.nativeEvent.layout.width,
+                      };
+                    }}
+                    onPress={(): void => selectSection(section.id)}
+                    style={({ pressed }) => [
+                      styles.categoryButton,
+                      layout.isTablet && styles.largeCategoryButton,
+                      layout.isCompactLandscape && styles.compactCategoryButton,
+                      isActive && styles.activeCategoryButton,
+                      pressed && styles.pressedCategoryButton,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryLabel,
+                        layout.isTablet && styles.largeCategoryLabel,
+                        layout.isCompactLandscape && styles.compactCategoryLabel,
+                        isActive && styles.activeCategoryLabel,
+                      ]}
+                    >
+                      {section.icon} {section.label}
+                    </Text>
+                  </Pressable>
+
+                  {section.id === 'quick-messages' && (
+                    <View accessibilityElementsHidden style={styles.sectionDivider} />
+                  )}
+                </Fragment>
+              );
+            })}
+          </ScrollView>
+
+          {hasMoreSectionsToRight && (
+            <View
+              accessible={false}
+              importantForAccessibility="no-hide-descendants"
+              pointerEvents="none"
+              style={[
+                styles.moreSectionsIndicator,
+                layout.isTablet && styles.largeMoreSectionsIndicator,
+                layout.isCompactLandscape && styles.compactMoreSectionsIndicator,
+              ]}
+            >
+              <Text style={styles.moreSectionsArrow}>›</Text>
+            </View>
+          )}
+        </View>
 
         <FlatList<Pictogram>
           key={layout.numberOfColumns}
@@ -246,15 +371,20 @@ const styles = StyleSheet.create({
   compactSectionTitle: {
     display: 'none',
   },
-  categoryScroll: {
+  sectionBar: {
     flexGrow: 0,
     flexShrink: 0,
+    position: 'relative',
   },
-  compactCategoryScroll: {
+  compactSectionBar: {
     marginTop: 6,
     maxHeight: 50,
   },
+  categoryScroll: {
+    flexGrow: 0,
+  },
   categories: {
+    alignItems: 'center',
     gap: 10,
     paddingBottom: 14,
     paddingRight: 16,
@@ -309,6 +439,35 @@ const styles = StyleSheet.create({
   },
   activeCategoryLabel: {
     color: '#FFFFFF',
+  },
+  sectionDivider: {
+    alignSelf: 'center',
+    backgroundColor: '#AAB8CA',
+    height: 30,
+    width: 1,
+  },
+  moreSectionsIndicator: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(244, 247, 251, 0.94)',
+    borderBottomLeftRadius: 12,
+    borderTopLeftRadius: 12,
+    height: 52,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: MORE_SECTIONS_INDICATOR_WIDTH,
+  },
+  compactMoreSectionsIndicator: {
+    height: 44,
+  },
+  largeMoreSectionsIndicator: {
+    height: 58,
+  },
+  moreSectionsArrow: {
+    color: '#5B6575',
+    fontSize: 28,
+    fontWeight: '600',
   },
   grid: {
     paddingBottom: 24,

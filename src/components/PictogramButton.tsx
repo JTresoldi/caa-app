@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { PictogramVisual } from '@/components/PictogramVisual';
 import type { Pictogram } from '@/data/pictograms';
 
 type PictogramButtonProps = {
@@ -31,9 +32,11 @@ export function PictogramButton({
         pressed && styles.buttonPressed,
       ]}
     >
-      <Text style={[styles.emoji, isLargeScreen && styles.largeEmoji]}>
-        {pictogram.emoji}
-      </Text>
+      <PictogramVisual
+        pictogram={pictogram}
+        size={isLargeScreen ? 70 : 58}
+        fontSize={isLargeScreen ? 58 : 48}
+      />
       <Text style={[styles.label, isLargeScreen && styles.largeLabel]}>
         {pictogram.label}
       </Text>
@@ -60,12 +63,6 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.72,
     transform: [{ scale: 0.98 }],
-  },
-  emoji: {
-    fontSize: 48,
-  },
-  largeEmoji: {
-    fontSize: 58,
   },
   label: {
     color: '#101828',

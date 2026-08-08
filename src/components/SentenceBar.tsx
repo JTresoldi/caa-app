@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { PictogramVisual } from '@/components/PictogramVisual';
 import type { Pictogram } from '@/data/pictograms';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 
@@ -15,21 +16,38 @@ type ActionButtonProps = {
   icon: string;
   onPress: () => void;
   disabled: boolean;
+  size: number;
   primary?: boolean;
-  isLargeScreen: boolean;
-  isCompactLandscape: boolean;
-  isLandscape: boolean;
 };
+
+const BAR_METRICS = {
+  regular: {
+    height: 104,
+    actionSize: 60,
+    gap: 8,
+    padding: 8,
+  },
+  compact: {
+    height: 72,
+    actionSize: 48,
+    gap: 4,
+    padding: 6,
+  },
+  tablet: {
+    height: 118,
+    actionSize: 72,
+    gap: 10,
+    padding: 10,
+  },
+} as const;
 
 function ActionButton({
   label,
   icon,
   onPress,
   disabled,
+  size,
   primary = false,
-  isLargeScreen,
-  isCompactLandscape,
-  isLandscape,
 }: ActionButtonProps): React.JSX.Element {
   return (
     <Pressable
@@ -40,9 +58,7 @@ function ActionButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
-        isLandscape && styles.landscapeActionButton,
-        isLargeScreen && styles.largeActionButton,
-        isCompactLandscape && styles.compactActionButton,
+        { height: size, width: size },
         primary ? styles.primaryButton : styles.secondaryButton,
         disabled && styles.disabledButton,
         pressed && !disabled && styles.pressedButton,
@@ -51,22 +67,12 @@ function ActionButton({
       <Text
         style={[
           styles.actionIcon,
-          isLargeScreen && styles.largeActionIcon,
-          isCompactLandscape && styles.compactActionIcon,
-          primary && styles.primaryLabel,
+          size === BAR_METRICS.compact.actionSize && styles.compactActionIcon,
+          size === BAR_METRICS.tablet.actionSize && styles.largeActionIcon,
+          primary && styles.primaryIcon,
         ]}
       >
         {icon}
-      </Text>
-      <Text
-        style={[
-          styles.actionLabel,
-          isLargeScreen && styles.largeActionLabel,
-          isCompactLandscape && styles.compactActionLabel,
-          primary && styles.primaryLabel,
-        ]}
-      >
-        {label}
       </Text>
     </Pressable>
   );
@@ -80,71 +86,69 @@ export function SentenceBar({
 }: SentenceBarProps): React.JSX.Element {
   const isEmpty: boolean = sentence.length === 0;
   const layout = useResponsiveLayout();
+  const metrics = layout.isTablet
+    ? BAR_METRICS.tablet
+    : layout.isCompactLandscape
+      ? BAR_METRICS.compact
+      : BAR_METRICS.regular;
+  const selectedVisualSize: number = layout.isTablet
+    ? 48
+    : layout.isCompactLandscape
+      ? 30
+      : 40;
+  const selectedEmojiSize: number = layout.isTablet
+    ? 44
+    : layout.isCompactLandscape
+      ? 28
+      : 36;
 
   return (
     <View
       accessibilityLabel="Frase atual"
       style={[
         styles.container,
-        layout.isLandscape && styles.landscapeContainer,
-        layout.isTablet && styles.largeContainer,
-        layout.isCompactLandscape && styles.compactContainer,
+        {
+          gap: metrics.gap,
+          height: metrics.height,
+          padding: metrics.padding,
+        },
       ]}
     >
-      <View
-        style={[
-          styles.sentenceArea,
-          layout.isLandscape && styles.landscapeSentenceArea,
-          layout.isCompactLandscape && styles.compactSentenceArea,
-        ]}
-      >
+      <View style={styles.sentenceField}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={[
-            styles.sentenceScroll,
-            layout.isCompactLandscape && styles.compactSentenceScroll,
-          ]}
+          style={styles.sentenceScroll}
           contentContainerStyle={[
             styles.sentenceContent,
-            layout.isTablet && styles.largeSentenceContent,
-            layout.isCompactLandscape && styles.compactSentenceContent,
+            { gap: metrics.gap },
           ]}
         >
           {isEmpty ? (
             <Text
+              numberOfLines={1}
               style={[
                 styles.placeholder,
                 layout.isCompactLandscape && styles.compactPlaceholder,
+                layout.isTablet && styles.largePlaceholder,
               ]}
             >
               Toque nos pictogramas para formar uma frase
             </Text>
           ) : (
             sentence.map((pictogram: Pictogram, index: number) => (
-              <View
-                key={`${pictogram.id}-${index}`}
-                style={[
-                  styles.selectedPictogram,
-                  layout.isTablet && styles.largeSelectedPictogram,
-                  layout.isCompactLandscape && styles.compactSelectedPictogram,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.selectedEmoji,
-                    layout.isTablet && styles.largeSelectedEmoji,
-                    layout.isCompactLandscape && styles.compactSelectedEmoji,
-                  ]}
-                >
-                  {pictogram.emoji}
-                </Text>
+              <View key={`${pictogram.id}-${index}`} style={styles.selectedPictogram}>
+                <PictogramVisual
+                  pictogram={pictogram}
+                  size={selectedVisualSize}
+                  fontSize={selectedEmojiSize}
+                />
                 <Text
                   numberOfLines={1}
                   style={[
                     styles.selectedLabel,
-                    layout.isTablet && styles.largeSelectedLabel,
                     layout.isCompactLandscape && styles.compactSelectedLabel,
+                    layout.isTablet && styles.largeSelectedLabel,
                   ]}
                 >
                   {pictogram.label}
@@ -153,42 +157,33 @@ export function SentenceBar({
             ))
           )}
         </ScrollView>
+
+        <View style={styles.inlineAction}>
+          <ActionButton
+            label="Falar"
+            icon="▶"
+            onPress={onSpeak}
+            disabled={isEmpty}
+            size={metrics.actionSize}
+            primary
+          />
+        </View>
       </View>
 
-      <View
-        style={[
-          styles.actions,
-          layout.isLandscape && styles.landscapeActions,
-          layout.isCompactLandscape && styles.compactActions,
-        ]}
-      >
-        <ActionButton
-          label="Falar"
-          icon="▶"
-          onPress={onSpeak}
-          disabled={isEmpty}
-          primary
-          isLargeScreen={layout.isTablet}
-          isCompactLandscape={layout.isCompactLandscape}
-          isLandscape={layout.isLandscape}
-        />
+      <View style={[styles.actions, { gap: metrics.gap }]}>
         <ActionButton
           label="Remover"
           icon="⌫"
           onPress={onRemoveLast}
           disabled={isEmpty}
-          isLargeScreen={layout.isTablet}
-          isCompactLandscape={layout.isCompactLandscape}
-          isLandscape={layout.isLandscape}
+          size={metrics.actionSize}
         />
         <ActionButton
           label="Limpar"
           icon="✕"
           onPress={onClear}
           disabled={isEmpty}
-          isLargeScreen={layout.isTablet}
-          isCompactLandscape={layout.isCompactLandscape}
-          isLandscape={layout.isLandscape}
+          size={metrics.actionSize}
         />
       </View>
     </View>
@@ -197,195 +192,110 @@ export function SentenceBar({
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
+    backgroundColor: '#EAF2FC',
+    borderColor: '#D3E1F3',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  sentenceField: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
     backgroundColor: '#FFFFFF',
     borderColor: '#B9C4D2',
-    borderRadius: 18,
-    borderWidth: 2,
-    padding: 12,
-  },
-  landscapeContainer: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  largeContainer: {
-    padding: 16,
-  },
-  compactContainer: {
     borderRadius: 14,
-    height: 78,
-    maxHeight: 78,
-    overflow: 'hidden',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  sentenceArea: {
-    minWidth: 0,
-  },
-  landscapeSentenceArea: {
+    borderWidth: 1,
     flex: 1,
+    flexDirection: 'row',
     minWidth: 0,
-  },
-  compactSentenceArea: {
-    height: 62,
+    overflow: 'hidden',
   },
   sentenceScroll: {
-    flexGrow: 0,
-    width: '100%',
-  },
-  compactSentenceScroll: {
-    height: 62,
-    maxHeight: 62,
+    flex: 1,
+    minWidth: 0,
   },
   sentenceContent: {
     alignItems: 'center',
     flexGrow: 1,
-    gap: 8,
     justifyContent: 'flex-start',
-    minHeight: 92,
-    paddingRight: 8,
-  },
-  largeSentenceContent: {
-    gap: 10,
-    minHeight: 104,
-  },
-  compactSentenceContent: {
-    gap: 6,
-    minHeight: 62,
-    paddingRight: 6,
+    paddingHorizontal: 8,
   },
   placeholder: {
     color: '#5B6575',
-    fontSize: 17,
-    lineHeight: 24,
-    paddingHorizontal: 8,
+    fontSize: 15,
+    lineHeight: 21,
   },
   compactPlaceholder: {
-    fontSize: 13,
-    lineHeight: 18,
-    paddingHorizontal: 4,
+    fontSize: 12,
+  },
+  largePlaceholder: {
+    fontSize: 17,
   },
   selectedPictogram: {
     alignItems: 'center',
-    backgroundColor: '#F7F9FC',
-    borderColor: '#CBD3DF',
-    borderRadius: 12,
-    borderWidth: 1,
-    minWidth: 78,
-    padding: 6,
-  },
-  largeSelectedPictogram: {
-    minWidth: 88,
-    padding: 8,
-  },
-  compactSelectedPictogram: {
-    borderRadius: 8,
-    minWidth: 58,
-    padding: 3,
-  },
-  selectedEmoji: {
-    fontSize: 42,
-  },
-  largeSelectedEmoji: {
-    fontSize: 48,
-  },
-  compactSelectedEmoji: {
-    fontSize: 30,
+    flexShrink: 0,
+    justifyContent: 'center',
+    minWidth: 54,
+    paddingHorizontal: 2,
   },
   selectedLabel: {
     color: '#172033',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    marginTop: 3,
-    maxWidth: 82,
-  },
-  largeSelectedLabel: {
-    fontSize: 15,
+    marginTop: 1,
+    maxWidth: 76,
   },
   compactSelectedLabel: {
-    fontSize: 11,
-    marginTop: 1,
-    maxWidth: 64,
+    fontSize: 10,
+    maxWidth: 62,
+  },
+  largeSelectedLabel: {
+    fontSize: 14,
+    maxWidth: 88,
+  },
+  inlineAction: {
+    flexShrink: 0,
+    paddingHorizontal: 6,
   },
   actions: {
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  landscapeActions: {
-    alignSelf: 'stretch',
-    flexGrow: 0,
     flexShrink: 0,
-    justifyContent: 'flex-end',
-    marginLeft: 12,
-    marginTop: 0,
-  },
-  compactActions: {
-    gap: 6,
-    marginLeft: 8,
   },
   actionButton: {
     alignItems: 'center',
-    borderRadius: 12,
-    flex: 1,
+    borderRadius: 14,
     justifyContent: 'center',
-    minHeight: 58,
-    minWidth: 76,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-  },
-  landscapeActionButton: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  largeActionButton: {
-    minHeight: 66,
-    minWidth: 92,
-    paddingHorizontal: 10,
-  },
-  compactActionButton: {
-    borderRadius: 10,
-    minHeight: 48,
-    minWidth: 68,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
   },
   primaryButton: {
     backgroundColor: '#1565C0',
   },
   secondaryButton: {
-    backgroundColor: '#E7ECF3',
+    backgroundColor: '#DCEBFF',
+    borderColor: '#C2D8F2',
+    borderWidth: 1,
   },
   disabledButton: {
-    opacity: 0.42,
+    opacity: 0.4,
   },
   pressedButton: {
-    opacity: 0.75,
+    opacity: 0.7,
+    transform: [{ scale: 0.97 }],
   },
   actionIcon: {
-    color: '#172033',
-    fontSize: 19,
+    color: '#1565C0',
+    fontSize: 25,
     fontWeight: '800',
-  },
-  largeActionIcon: {
-    fontSize: 21,
   },
   compactActionIcon: {
-    fontSize: 16,
+    fontSize: 20,
   },
-  actionLabel: {
-    color: '#172033',
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 2,
+  largeActionIcon: {
+    fontSize: 29,
   },
-  largeActionLabel: {
-    fontSize: 15,
-  },
-  compactActionLabel: {
-    fontSize: 12,
-    marginTop: 0,
-  },
-  primaryLabel: {
+  primaryIcon: {
     color: '#FFFFFF',
   },
 });
